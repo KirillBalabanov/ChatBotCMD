@@ -1,5 +1,8 @@
 package com.kirillbalabanov.server;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -15,27 +18,46 @@ public class ServerSettings {
      * Construct class encapsulating free port and ip of current machine
      * @throws IOException
      */
-    public ServerSettings() throws IOException{
+    private ServerSettings() throws IOException{
         this.ip = InetAddress.getLocalHost();
         this.port = getFreePort();
     }
 
-    /**
-     * Method is creating txt file containing IP and port of the server.
-     * @param path path to file.
-     * @param fileName name of file.
-     */
-    public void exportSettings(String path, String fileName) {
-
-
+    private ServerSettings(InetAddress ip, int port) {
+        this.ip = ip;
+        this.port = port;
     }
 
     /**
-     * Method is creating txt file containing IP and port of the server with default fileName = 'settings'.
-     * @param path path to file
+     * Method is exporting settings of {@link com.kirillbalabanov.server.ServerSettings} to file.
+     * @param serverSettings {@link com.kirillbalabanov.server.ServerSettings} class, encapsulating ip and port.
+     * @param path path to file.
+     * @param fileName file name.
+     * @throws IOException
      */
-    public void exportSettings(String path) {
-        exportSettings(path, "settings");
+    public static void exportSettings(ServerSettings serverSettings, String path, String fileName) throws IOException{
+        try(FileWriter fileWriter = new FileWriter(path + "\\" + fileName)) {
+            fileWriter.write(serverSettings.ip.toString() + "\n");
+            fileWriter.write(serverSettings.port);
+        }
+    }
+
+    /**
+     * Method is exporting settings of {@link com.kirillbalabanov.server.ServerSettings} to file <b>settings</b>
+     * with given path.
+     * @param serverSettings {@link com.kirillbalabanov.server.ServerSettings} class, encapsulating ip and port.
+     * @param path path to file.
+     * @throws IOException
+     */
+    public static void exportSettings(ServerSettings serverSettings, String path) throws IOException {
+        exportSettings(serverSettings, path, "settings");
+    }
+
+
+    public static ServerSettings importSettings(String path, String fileName) throws IOException {
+        try(FileReader fileReader = new FileReader(path + "\\" + fileName)) {
+            ServerSettings serverSettings = new ServerSettings();
+        }
     }
 
     /**
