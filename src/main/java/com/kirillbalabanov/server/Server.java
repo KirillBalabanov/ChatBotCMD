@@ -24,8 +24,9 @@ public class Server {
      * @throws IOException
      */
     Server(int backlog) throws IOException {
-        ServerSettings serverSettings = new ServerSettings();
-        ServerSocket serverSocket = new ServerSocket(serverSettings.getPort(), backlog, serverSettings.getIp());
+        // get local settings.
+        serverSettings = ServerSettings.localSettings();
+        serverSocket = new ServerSocket(serverSettings.getPort(), backlog, serverSettings.getIp());
     }
 
     /**
@@ -64,5 +65,12 @@ public class Server {
             ous2.writeObject(user1DS);
         }
 
+    }
+
+    /**
+     * Export Server settings to settings\settings.txt.
+     */
+    public void exportSettings(String path) throws IOException {
+        ServerSettings.exportSettings(serverSettings, "settings");
     }
 }
