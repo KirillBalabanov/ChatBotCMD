@@ -5,7 +5,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 
 /**
- * Class is encapsulating ip and free port of current machine.
+ * Class is responsible for creating txt file with server IP and port.
  */
 public class ServerSettings {
     private InetAddress ip;
@@ -20,8 +20,23 @@ public class ServerSettings {
         this.port = getFreePort();
     }
 
-    public InetAddress getIp() {return ip;}
-    public int getPort() {return port;}
+    /**
+     * Method is creating txt file containing IP and port of the server.
+     * @param path path to file.
+     * @param fileName name of file.
+     */
+    public void exportSettings(String path, String fileName) {
+
+
+    }
+
+    /**
+     * Method is creating txt file containing IP and port of the server with default fileName = 'settings'.
+     * @param path path to file
+     */
+    public void exportSettings(String path) {
+        exportSettings(path, "settings");
+    }
 
     /**
      * Method defines free port and returns it.
