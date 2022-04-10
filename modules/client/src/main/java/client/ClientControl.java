@@ -41,6 +41,13 @@ public class ClientControl {
             try(ObjectInputStream objectInputStream = new ObjectInputStream(serverSocket.getInputStream())) {
                 matchedClientInfo = (ClientInfo) objectInputStream.readObject();
             }
+
+            // wait for server socket to end a connection.
+            /*
+             need so that no DatagramPackage would be lost, in case user1 obtains ClientData and sends data package
+             faster than user2 obtains ClientData.
+             */
+
         } catch (Exception ignore) {return false; }
         finally {
             searching = false;
@@ -66,11 +73,11 @@ public class ClientControl {
 
                 // receive talker's name
                 usersSocket.receive(receivePackage);
-
+                System.out.println("here");
             } catch (IOException e) {
                 System.out.println(e.toString());
             }
-
+            System.out.println("hersdfsdfee");
             String talkerName = new String(receivePackage.getData(), 0, receivePackage.getLength());
             System.out.println("\nMatched with " + talkerName);
 
@@ -110,7 +117,7 @@ public class ClientControl {
 
                     if(!talking) break;
 
-                    sendPackage(usersSocket, matchedClientInfo, String.format("--- %s: %s%n", client.getUserName(), line).getBytes());
+                    sendPackage(usersSocket, matchedClientInfo, String.format("--- %s: %s %n", client.getUserName(), line).getBytes());
 
                     if(line.equals(Properties.endTalkStr)) {
                         Properties.printConversationEnd(talkerName);
