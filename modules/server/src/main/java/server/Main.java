@@ -17,12 +17,12 @@ public class Main {
             while(true) {
                 try {
                     server.match();
-                } catch (IOException e) {
+                } catch (Exception e) {
                     System.out.println(e.toString());
                 }
             }
 
-        } catch(IOException e) {
+        } catch(Exception e) {
             System.out.println(e.toString());
         }
 

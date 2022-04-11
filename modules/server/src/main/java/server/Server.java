@@ -1,11 +1,13 @@
 package server;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.Semaphore;
 
 /**
  * Class is encapsulating server.
@@ -31,28 +33,33 @@ public class Server {
     /**
      * Method is responsible for matching users.
      * <P>
-     *     Firstly server accepts two users, then collects their data such as free port and ip.
-     *     Then outputs user1 {@link server.ClientInfo} to user2, and contrary.
+     *     Firstly server accepts two users, then inputs an object of each user.
+     *     User1 object outputs to user2, anc contrary.
+     *     Semaphore outputs to every user to sync their connection after their close connection with server.
      * </P>
      * <P>
-     *     On the client side opens a connection between users.
+     *     On the client side opens a 'connection' between users through {@link java.net.DatagramSocket}
      * </P>
      */
-    public void match() throws IOException {
+    public void match() throws IOException, ClassNotFoundException {
         // accepting two users
         Socket user1 = serverSocket.accept();
         Socket user2 = serverSocket.accept();
 
-        // collecting their data
-        ClientInfo clientInfo1 = new ClientInfo(user1.getInetAddress(), user1.getPort());
-        ClientInfo clientInfo2 = new ClientInfo(user2.getInetAddress(), user2.getPort());
-
         try(ObjectOutputStream ous1 = new ObjectOutputStream(user1.getOutputStream());
-            ObjectOutputStream ous2 = new ObjectOutputStream(user2.getOutputStream())){
+            ObjectOutputStream ous2 = new ObjectOutputStream(user2.getOutputStream());
+            ObjectInputStream ois1 = new ObjectInputStream(user1.getInputStream());
+            ObjectInputStream ois2 = new ObjectInputStream(user2.getInputStream());){
 
-            // output InetAddress and Integer through ObjectOutputStream.
-            ous1.writeObject(clientInfo2);
-            ous2.writeObject(clientInfo1);
+            // get Objects from users
+            ClientInfo user1Obj = (ClientInfo) ois1.readObject();
+            ClientInfo user2Obj = (ClientInfo) ois2.readObject();;
+
+            // output objects to users, setting user1 - host.
+            user1Obj.setHost();
+            ous1.writeObject(user2Obj);
+            ous2.writeObject(user1Obj);
+
         }
     }
 

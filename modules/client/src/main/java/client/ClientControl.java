@@ -3,163 +3,150 @@ package client;
 import server.ClientInfo;
 import server.ServerSettings;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
+import java.io.*;
 import java.net.*;
 
 /**
  * Class is responsible for controlling program execution.
  */
 public class ClientControl {
-    private boolean talking;
-    private boolean searching;
     private final Client client;
-    private ClientInfo matchedClientInfo;
+    private int currentPort;
 
     ClientControl(Client client) {
         this.client = client;
-        talking = searching = false;
-        matchedClientInfo = null;
+        currentPort = -1;
     }
 
     /**
-     * Method is responsible for connecting to server and get matched user's {@link java.net.DatagramSocket}.
+     * Method is responsible for connecting to server, sending client info and starting a talk with matched user.
+     *
+     *
      */
-    public boolean findUser() {
-        searching = true;
+    public void findAndTalk(BufferedReader br) {
         try{
-            ServerSettings serverSettings = ServerSettings.importSettings("settings/settings.txt");
-            // connect to server
-            Socket serverSocket = new Socket(serverSettings.getIp(), serverSettings.getPort());
+            // creating dynamicLoader Thread and running it.
+            StoppedThread dynamicLoader = ClientControl.dynamicLoaderStream("Finding user ", ". . .");
+            new Thread(dynamicLoader).start();
 
-            // setting port that would be freed to client
-            client.setCurrentPort(serverSocket.getLocalPort());
+            ClientInfo matchedClient = find();
+            // stop dynamicLoader Thread.
+            dynamicLoader.stopThread();
+            System.out.println("\nMatched with " + matchedClient.name);
 
-            // get matched ClientInfo
-            try(ObjectInputStream objectInputStream = new ObjectInputStream(serverSocket.getInputStream())) {
-                matchedClientInfo = (ClientInfo) objectInputStream.readObject();
+            // if client is host then create ServerSocket, otherwise connect to host.
+            dynamicLoader = ClientControl.dynamicLoaderStream("Establishing a connection", ". . .");
+            new Thread(dynamicLoader).start();
+            Socket workingSocket;
+            ServerSocket serverSocket = null;
+            if(matchedClient.isHost) {
+                workingSocket = new Socket(matchedClient.ip, matchedClient.port);
             }
+            else{
+                serverSocket = new ServerSocket(currentPort);
+                workingSocket = serverSocket.accept();
+            }
+            dynamicLoader.stopThread();
+            System.out.println("\nSuccessfully connected!");
 
-            // wait for server socket to end a connection.
-            /*
-             need so that no DatagramPackage would be lost, in case user1 obtains ClientData and sends data package
-             faster than user2 obtains ClientData.
-             */
+            talk(matchedClient, workingSocket, br);
 
-        } catch (Exception ignore) {return false; }
-        finally {
-            searching = false;
-        }
-        return true;
+            System.out.println("Conversation with " + matchedClient.name + " ended");
+
+            // close server socket if host
+            if(!matchedClient.isHost && serverSocket != null) serverSocket.close();
+
+        } catch (Exception ignore) { }
     }
 
-    public void talk() {
+    private ClientInfo find() throws IOException, ClassNotFoundException {
 
-        talking = true;
+        // get server settings from settings/settings.txt.
+        ServerSettings serverSettings = ServerSettings.importSettings("settings/settings.txt");
 
-        try(DatagramSocket usersSocket = new DatagramSocket(client.getCurrentPort())) {
+        // connect to server
+        Socket serverSocket = new Socket(serverSettings.getIp(), serverSettings.getPort());
 
-            // receive buffer
-            int bufferSize = Properties.datagramPacketSize;
-            byte[] buffer = new byte[bufferSize];
-            DatagramPacket receivePackage = new DatagramPacket(buffer, bufferSize);
+        // setting port that would be freed to client
+        currentPort = serverSocket.getLocalPort();
 
-            try{
+        ClientInfo matchedClientInfo = null;
 
-                // send user's name
-                sendPackage(usersSocket, matchedClientInfo, client.getUserName().getBytes());
+        try (ObjectInputStream objectInputStream = new ObjectInputStream(serverSocket.getInputStream());
+             ObjectOutputStream objectOutputStream = new ObjectOutputStream(serverSocket.getOutputStream())) {
+            // send ClientInfo to server
+            objectOutputStream.writeObject(new ClientInfo(InetAddress.getLocalHost(), currentPort, client.getUserName()));
 
-                // receive talker's name
-                usersSocket.receive(receivePackage);
-                System.out.println("here");
-            } catch (IOException e) {
-                System.out.println(e.toString());
-            }
-            System.out.println("hersdfsdfee");
-            String talkerName = new String(receivePackage.getData(), 0, receivePackage.getLength());
-            System.out.println("\nMatched with " + talkerName);
+            // get ClientInfo of matched user
+            matchedClientInfo = (ClientInfo) objectInputStream.readObject();
 
-            // Start output stream for receiving Datagram Packages and printing them to Console.
-            new Thread("Talker Thread") {
+        }
+        return matchedClientInfo;
+    }
+
+    private void talk(ClientInfo matchedClientInfo, Socket workingSocket, BufferedReader br) {
+
+        try(BufferedWriter writeToTalker = new BufferedWriter(new OutputStreamWriter(workingSocket.getOutputStream()));
+            BufferedReader readFromTalker = new BufferedReader(new InputStreamReader(workingSocket.getInputStream()))) {
+
+            // Creat Thread for matched user output
+            new Thread() {
                 public void run() {
                     try {
-                        while(talking) {
-                            DatagramPacket receivePackage = new DatagramPacket(buffer, bufferSize);
-                            usersSocket.receive(receivePackage);
-                            String receivedString = new String(receivePackage.getData(), 0, receivePackage.getLength());
-
-                            if(receivedString.equals(Properties.endTalkStr)) {
-                                talking = false;
-                                Properties.printConversationEnd(talkerName);
-                                // enter to end input stream which is waiting for line.
+                        while(true) {
+                            String str = readFromTalker.readLine();
+                            if (str == null || str.equals(Properties.endTalkStr)) {
+                                System.out.println("User " + matchedClientInfo.name + " has left.");
                                 System.out.println("Press enter to continue.");
-                                return;
+                                // close socket so that try to read/write to socket would throw IOException
+                                workingSocket.close();
+                                break;
                             }
-
-                            System.out.print(receivedString);
+                            System.out.printf("--- %s: %s %n", matchedClientInfo.name, str);
                         }
-                    } catch (IOException e) {
-                        System.out.println(e.toString());
-                        return;
-                    }
-
+                    } catch (IOException ignore) { }
                 }
             }.start();
 
+            // Input from console and write to user.
+            while(true) {
+                String str = br.readLine();
 
-            // Read from console and send to talker.
-            BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-            while(talking) {
-                try{
-                    String line = br.readLine();
+                writeToTalker.write(str);
+                writeToTalker.newLine();
+                writeToTalker.flush();
 
-                    if(!talking) break;
-
-                    sendPackage(usersSocket, matchedClientInfo, String.format("--- %s: %s %n", client.getUserName(), line).getBytes());
-
-                    if(line.equals(Properties.endTalkStr)) {
-                        Properties.printConversationEnd(talkerName);
-                        talking = false;
-                        break;
-                    }
-                    System.out.printf("--- %s (You): %s%n", client.getUserName(), line);
-
-                } catch(IOException e){
-                    System.out.println(e.toString());
+                if(str.equals(Properties.endTalkStr)) {
+                    // close socket so that try to read/write to socket would throw IOException
+                    workingSocket.close();
+                    break;
                 }
-
+                System.out.printf("--- %s (You): %s %n", client.getUserName(), str);
             }
-
-        } catch (IOException e) {System.out.println(e.toString()); }
-        finally {
-            talking = false;
-        }
-
+        } catch (IOException e) {System.out.println(e.toString());}
     }
 
-    private static void sendPackage(DatagramSocket usersSocket, ClientInfo clientInfo, byte[] bytes) throws IOException {
-        byte[] buffer = new byte[Properties.datagramPacketSize];
-        int counter = 0;
-        for(int i = 0; i < bytes.length; i++) {
-            buffer[counter++] = bytes[i];
-            if(counter == Properties.datagramPacketSize - 1){
-                usersSocket.send(new DatagramPacket(buffer, counter, clientInfo.ip, clientInfo.port));
-                counter = 0;
+    /**
+     * Method is creating Thread that would be printing loadingSymbols after String each 0.5 sec in cycle.
+     * To stop the thread call stopThread.
+     * @param str - string that would not be erased
+     * @param loadingSymbols - symbols that would be appearing every 0.5 seconds in cycle.
+     * @return Thread anonymous class.
+     */
+    public static StoppedThread dynamicLoaderStream(String str, String loadingSymbols) {
+        return new StoppedThread() {
+            private boolean stopped = false;
+
+            public void stopThread() {stopped = true;}
+
+            public boolean isAlive() {
+                return !stopped;
             }
-        }
-        usersSocket.send(new DatagramPacket(buffer, counter, clientInfo.ip, clientInfo.port));
-    }
-
-    public void dynamicLoaderStream(String str, String loadingSymbols) {
-
-        new Thread("Dynamic Loader") {
 
             public void run() {
                 int lastIndex = loadingSymbols.length() - 1;
                 int counter = 0;
-                while(searching) {
+                while(!stopped) {
                     System.out.print("\r" + str + loadingSymbols.substring(0, counter));
                     counter = counter >= lastIndex ? 0 : counter + 1;
                     try {
@@ -167,7 +154,7 @@ public class ClientControl {
                     } catch (InterruptedException ignore) { }
                 }
             }
-        }.start();
+        };
 
     }
 }

@@ -4,16 +4,14 @@ package client;
 import client.exceptions.InvalidNameException;
 
 /**
- * Class is implementing client of {@link Server ChatBotServer}
+ * Class is implementing client of {@link server.Server ChatBotServer}
  *
  */
 public class Client {
     private String userName;
-    private int currentPort;
 
     public Client(String userName) throws InvalidNameException {
         setUserName(userName);
-        this.currentPort = -1;
     }
 
     public String getUserName() {
@@ -43,7 +41,4 @@ public class Client {
         this.userName = userName;
     }
 
-
-    public void setCurrentPort(int port) {this.currentPort = port;}
-    public int getCurrentPort() {return this.currentPort; }
 }

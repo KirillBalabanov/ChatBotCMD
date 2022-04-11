@@ -9,7 +9,4 @@ public class Properties {
     public static final boolean nameStartsWithUpperCase = true;
     public static final int datagramPacketSize = 256;
     public static final String endTalkStr = "$stop";
-    public static void printConversationEnd(String talkerName) {
-        System.out.printf("Conversation with %s has ended %n", talkerName);
-    }
 }

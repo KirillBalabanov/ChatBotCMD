@@ -46,9 +46,8 @@ public class Main {
                 printMainMenu();
                 switch (br.readLine()){
                     case "1":
-                        clientControl.dynamicLoaderStream("Finding user ", ". . .");
-                        clientControl.findUser();
-                        clientControl.talk();
+                        clientControl.findAndTalk(br);
+                        break;
 
                     case "2":
                         return;
