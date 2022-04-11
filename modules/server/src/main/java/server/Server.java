@@ -56,7 +56,7 @@ public class Server {
         }
     }
 
-    public static Server createExportAndStart(int backlog) throws IOException {
+    public static Server startAndExportSettings(int backlog) throws IOException {
         Server server = new Server(backlog);
         server.exportSettings();
         return server;

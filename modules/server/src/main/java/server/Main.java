@@ -9,7 +9,7 @@ public class Main {
         try {
 
             System.out.println("Starting server...");
-            Server server = Server.createExportAndStart(50);
+            Server server = Server.startAndExportSettings(50);
             System.out.println("Server created successfully.\n" +
                     "Server settings exported to settings/settings.txt");
 
