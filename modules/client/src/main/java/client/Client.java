@@ -2,7 +2,9 @@ package client;
 
 
 import client.exceptions.InvalidNameException;
+import server.ClientInfo;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -10,7 +12,7 @@ import java.net.UnknownHostException;
  * Class is implementing client of {@link server.Server ChatBotServer}
  *
  */
-public class Client {
+public class Client implements Serializable {
     private String userName;
     private int currentPort;
     private final InetAddress ip;
@@ -74,6 +76,13 @@ public class Client {
             return this.hashCode() - client.hashCode() < 0;
         }
         return this.getCurrentPort() - client.getCurrentPort() < 0;
+    }
+
+    /**
+     * Method is returning {@link server.ClientInfo} based on {@link server.ClientInfo} ip, port and username.
+     */
+    public ClientInfo createClientInfo() {
+        return new ClientInfo(this.ip, this.currentPort, this.userName);
     }
 
 }

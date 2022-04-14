@@ -1,10 +1,10 @@
 package client;
 
+import server.ClientInfo;
 import server.ServerSettings;
 
 import java.io.*;
 import java.net.*;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -28,25 +28,36 @@ public class Control {
 
         ScheduledExecutorService scheduledExecutorService = new ScheduledThreadPoolExecutor(1);
 
-        scheduledExecutorService.execute(dynamicLoaderRunnable("Finding user", ". . ."));
+        scheduledExecutorService.scheduleAtFixedRate(dynamicLoaderRunnable(
+                "Finding user", ". . ."), 0, Properties.loadSymbolsPeriodMS, TimeUnit.MILLISECONDS);
         // request to server to find client.
-        Client matchedClient;
+        ClientInfo matchedClient;
         try{
             matchedClient = find();
-        } catch (IOException | ClassNotFoundException ignore) {System.out.println("Fatal error... Please try again."); return;}
+        } catch (IOException | ClassNotFoundException ee) {
+            System.out.println("Fatal error... Please try again."); return;}
         finally {
             scheduledExecutorService.shutdown();
         }
         System.out.println("\nMatched with " + matchedClient.getUserName());
 
-        scheduledExecutorService.execute(dynamicLoaderRunnable("Establishing a connection", ". . ."));
+        scheduledExecutorService = new ScheduledThreadPoolExecutor(1);
+        scheduledExecutorService.scheduleAtFixedRate(dynamicLoaderRunnable(
+                "Establishing a connection", ". . ."), 0, Properties.loadSymbolsPeriodMS, TimeUnit.MILLISECONDS);
         // if client is host then create ServerSocket, otherwise connect to host.
-
         Socket workingSocket;
         ServerSocket serverSocket = null;
 
-        boolean isHostToMatchedClient = this.client.isHostToUser(matchedClient);
-        if(isHostToMatchedClient) {
+        if(matchedClient.isHost()) {
+
+            workingSocket = tryToConnect(matchedClient);
+            scheduledExecutorService.shutdown();
+            if(workingSocket == null) {
+                System.out.println("Cannot connect to user " + matchedClient.getUserName());
+                return;
+            }
+        }
+        else{
             try{
                 serverSocket = new ServerSocket(client.getCurrentPort());
                 workingSocket = serverSocket.accept();
@@ -58,14 +69,6 @@ public class Control {
                 scheduledExecutorService.shutdown();
             }
         }
-        else{
-            workingSocket = tryToConnect(matchedClient);
-            scheduledExecutorService.shutdown();
-            if(workingSocket == null) {
-                System.out.println("Cannot connect to user " + matchedClient.getUserName());
-                return;
-            }
-        }
         System.out.println("\nSuccessfully connected!");
         System.out.println("Print " + Properties.endTalkStr + " to stop the conversation.");
 
@@ -74,7 +77,7 @@ public class Control {
         System.out.println("Conversation with " + matchedClient.getUserName() + " ended");
 
         // close server socket if host
-        if(isHostToMatchedClient) {
+        if(!matchedClient.isHost() && serverSocket != null) {
             try{
                 serverSocket.close();
             } catch (IOException ignore) { }
@@ -82,7 +85,7 @@ public class Control {
 
     }
 
-    private Client find() throws IOException, ClassNotFoundException {
+    private ClientInfo find() throws IOException, ClassNotFoundException {
 
         // get server settings
         ServerSettings serverSettings = ServerSettings.importSettings(Properties.defaultPathToSettings);
@@ -92,18 +95,18 @@ public class Control {
 
         // setting port that would be freed to client after connection ends
         client.setCurrentPort(serverSocket.getLocalPort());
-        Client matchedClient;
+        ClientInfo matchedClient;
         try (ObjectInputStream ois = new ObjectInputStream(serverSocket.getInputStream());
             ObjectOutputStream ous = new ObjectOutputStream(serverSocket.getOutputStream())) {
 
-            ous.writeObject(this.client);
-            matchedClient = (Client) ois.readObject();
+            ous.writeObject(this.client.createClientInfo());
+            matchedClient = (ClientInfo) ois.readObject();
 
         }
         return matchedClient;
     }
 
-    private void talk(Client matchedClientInfo, Socket workingSocket, BufferedReader br) {
+    private void talk(ClientInfo matchedClientInfo, Socket workingSocket, BufferedReader br) {
 
         try(BufferedWriter writeToTalker = new BufferedWriter(new OutputStreamWriter(workingSocket.getOutputStream()))) {
 
@@ -157,10 +160,10 @@ public class Control {
         };
     }
 
-    private Socket tryToConnect(Client hostClient) {
+    private Socket tryToConnect(ClientInfo hostClient) {
         for(int i = 0; i < 3; i++) {
             try{
-                return new Socket(hostClient.getIp(), hostClient.getCurrentPort());
+                return new Socket(hostClient.getIp(), hostClient.getPort());
             } catch (IOException ignore) {
                 System.out.println("Unable to connect. Trying again.");
                 try{

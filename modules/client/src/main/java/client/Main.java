@@ -18,8 +18,8 @@ public class Main {
 
     public static void printMainMenu() {
         System.out.println("Print 1 to find talker;");
-        System.out.println("Print 2 to leave;");
-        System.out.println("Print 3 to change username.");
+        System.out.println("Print 2 to change username;");
+        System.out.println("Print 3 to leave.");
     }
 
     public static void setUserName(Client client, BufferedReader br) {
@@ -28,7 +28,7 @@ public class Main {
                 client.setUserName(br.readLine());
                 break;
             } catch (InvalidNameException | IOException invalidNameException) {
-                invalidNameException.printStackTrace();
+                System.out.println(invalidNameException.toString());
             }
         }
     }
@@ -52,11 +52,7 @@ public class Main {
                     case "1":
                         control.findAndTalk(br);
                         break;
-
                     case "2":
-                        return;
-
-                    case "3":
                         // changing name
                         System.out.println("Please input your name.");
                         setUserName(client, br);
@@ -64,6 +60,9 @@ public class Main {
                         break;
                     default:
                         System.out.println("Wrong option");
+
+                    case "3":
+                        System.exit(0);
                 }
             }
         } catch (IOException e) {

@@ -10,7 +10,7 @@ import java.net.Socket;
  * Class is encapsulating server.
  * server.Server is responsible for matching two users with each other.
  * <P>
- * Matching means that server inputs objects from two users and then outputs user1 object to user2, and contrary.
+ * Matching means that server inputs {@link server.ClientInfo} from two users and then outputs user1 object to user2, and contrary.
  * </P>
  */
 public class Server {
@@ -30,7 +30,7 @@ public class Server {
     /**
      * Method is responsible for matching users.
      * <P>
-     *     Firstly server accepts two users, then inputs an object of each user.
+     *     Firstly server accepts two users, then inputs an {@link server.ClientInfo} instance of each user.
      *     User1 object outputs to user2, anc contrary.
      * </P>
      */
@@ -42,11 +42,14 @@ public class Server {
         try(ObjectOutputStream ous1 = new ObjectOutputStream(user1.getOutputStream());
             ObjectOutputStream ous2 = new ObjectOutputStream(user2.getOutputStream());
             ObjectInputStream ois1 = new ObjectInputStream(user1.getInputStream());
-            ObjectInputStream ois2 = new ObjectInputStream(user2.getInputStream());){
+            ObjectInputStream ois2 = new ObjectInputStream(user2.getInputStream())){
 
             // get Objects from users
-            Object user1Obj = ois1.readObject();
-            Object user2Obj = ois2.readObject();;
+            ClientInfo user1Obj = (ClientInfo) ois1.readObject();
+            ClientInfo user2Obj = (ClientInfo) ois2.readObject();
+
+            // set user1 - host.
+            user1Obj.setHost();
 
             // output objects to users
             ous1.writeObject(user2Obj);
