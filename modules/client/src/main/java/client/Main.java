@@ -5,16 +5,15 @@ import client.exceptions.InvalidNameException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.DatagramSocket;
 
 public class Main {
 
     public static void startMenu() {
         System.out.println("Greetings! Please input your name.");
-        String strCase = Properties.nameStartsWithUpperCase ? "Upper Case" : "Lower Case";
+        String strCase = Properties.Name.nameStartsWithUpperCase ? "Upper Case" : "Lower Case";
         System.out.printf("---Name should start with %s%n" +
                 "---Contain %s normal letters%n" +
-                "---Be in range smaller than %s symbols%n", strCase, Properties.normalLetterCount, Properties.userNameLen);
+                "---Be in range smaller than %s symbols%n", strCase, Properties.Name.normalLetterCount, Properties.Name.userNameLen);
     }
 
     public static void printMainMenu() {
@@ -23,30 +22,35 @@ public class Main {
         System.out.println("Print 3 to change username.");
     }
 
+    public static void setUserName(Client client, BufferedReader br) {
+        while (true) {
+            try {
+                client.setUserName(br.readLine());
+                break;
+            } catch (InvalidNameException | IOException invalidNameException) {
+                invalidNameException.printStackTrace();
+            }
+        }
+    }
+
 
     public static void main(String[] args) {
-        startMenu();
-        Client client;
-        ClientControl clientControl;
         try(BufferedReader br = new BufferedReader(new InputStreamReader(System.in))) {
             // getting client instance
-            while (true) {
-                try {
-                    client = new Client(br.readLine());
-                    break;
-                } catch (InvalidNameException invalidNameException) {
-                    System.out.println(invalidNameException.toString());
-                }
-            }
+            startMenu();
+            Client client = new Client();
+            Control control;
+            setUserName(client, br);
+
             System.out.printf("Username %s has been set %n", client.getUserName());
-            clientControl = new ClientControl(client);
+            control = new Control(client);
 
             // main menu loop
             while(true){
                 printMainMenu();
                 switch (br.readLine()){
                     case "1":
-                        clientControl.findAndTalk(br);
+                        control.findAndTalk(br);
                         break;
 
                     case "2":
@@ -55,25 +59,15 @@ public class Main {
                     case "3":
                         // changing name
                         System.out.println("Please input your name.");
-                        while (true) {
-                            try {
-                                client.setUserName(br.readLine());
-                                break;
-                            } catch (InvalidNameException invalidNameException) {
-                                System.out.println(invalidNameException.toString());
-                            }
-                        }
+                        setUserName(client, br);
                         System.out.printf("Username %s has been set %n", client.getUserName());
                         break;
                     default:
                         System.out.println("Wrong option");
                 }
-
             }
-
         } catch (IOException e) {
-            System.out.println(e.toString());
+            e.printStackTrace();
         }
-
     }
 }

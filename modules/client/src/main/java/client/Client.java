@@ -15,9 +15,21 @@ public class Client {
     private int currentPort;
     private final InetAddress ip;
 
+    /**
+     * Creates a client instance with given username.
+     * @throws InvalidNameException if name doesn't match {@link Properties}
+     */
     public Client(String userName) throws InvalidNameException, UnknownHostException {
         setUserName(userName);
         ip = InetAddress.getLocalHost();
+    }
+
+    /**
+     * Creates client with userName = null. Username must be set later!
+     */
+    public Client() throws UnknownHostException {
+        this.userName = null;
+        this.ip = InetAddress.getLocalHost();
     }
 
     public String getUserName() {
@@ -31,18 +43,18 @@ public class Client {
      */
     public void setUserName(String userName) throws InvalidNameException {
         if(userName == null) throw new InvalidNameException("Null name.");
-        if(userName.length() == 0 || userName.length() > Properties.userNameLen) {
+        if(userName.length() == 0 || userName.length() > Properties.Name.userNameLen) {
             throw new InvalidNameException("Name out of length.");
         }
-        if(Character.isUpperCase(userName.charAt(0)) != Properties.nameStartsWithUpperCase) {
+        if(Character.isUpperCase(userName.charAt(0)) != Properties.Name.nameStartsWithUpperCase) {
             throw new InvalidNameException("Name starts with wrong case.");
         }
         int normalLettersCounter = 0;
         for(int i = 0; i < userName.length(); i++) {
             if(Character.isLetter(userName.charAt(i))) normalLettersCounter++;
         }
-        if(normalLettersCounter < Properties.normalLetterCount) {
-            throw new InvalidNameException("Name should contain " + Properties.normalLetterCount + " normal letters");
+        if(normalLettersCounter < Properties.Name.normalLetterCount) {
+            throw new InvalidNameException("Name should contain " + Properties.Name.normalLetterCount + " normal letters");
         }
         this.userName = userName;
     }

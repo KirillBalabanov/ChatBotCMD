@@ -43,10 +43,9 @@ public class Control {
         // if client is host then create ServerSocket, otherwise connect to host.
 
         Socket workingSocket;
-        ServerSocket serverSocket;
+        ServerSocket serverSocket = null;
 
         boolean isHostToMatchedClient = this.client.isHostToUser(matchedClient);
-
         if(isHostToMatchedClient) {
             try{
                 serverSocket = new ServerSocket(client.getCurrentPort());
@@ -60,10 +59,13 @@ public class Control {
             }
         }
         else{
-            workingSocket = new Socket(matchedClient.getIp(), matchedClient.getCurrentPort());
+            workingSocket = tryToConnect(matchedClient);
+            scheduledExecutorService.shutdown();
+            if(workingSocket == null) {
+                System.out.println("Cannot connect to user " + matchedClient.getUserName());
+                return;
+            }
         }
-
-        scheduledExecutorService.shutdownNow();
         System.out.println("\nSuccessfully connected!");
         System.out.println("Print " + Properties.endTalkStr + " to stop the conversation.");
 
@@ -72,36 +74,33 @@ public class Control {
         System.out.println("Conversation with " + matchedClient.getUserName() + " ended");
 
         // close server socket if host
-        if(isHost) serverSocket.close();
+        if(isHostToMatchedClient) {
+            try{
+                serverSocket.close();
+            } catch (IOException ignore) { }
+        }
 
     }
 
     private Client find() throws IOException, ClassNotFoundException {
 
-        // get server settings from settings/settings.txt.
+        // get server settings
         ServerSettings serverSettings = ServerSettings.importSettings(Properties.defaultPathToSettings);
 
         // connect to server
         Socket serverSocket = new Socket(serverSettings.getIp(), serverSettings.getPort());
 
-        // setting port that would be freed to client
+        // setting port that would be freed to client after connection ends
         client.setCurrentPort(serverSocket.getLocalPort());
+        Client matchedClient;
+        try (ObjectInputStream ois = new ObjectInputStream(serverSocket.getInputStream());
+            ObjectOutputStream ous = new ObjectOutputStream(serverSocket.getOutputStream())) {
 
-        Client matchedClientInfo = null;
+            ous.writeObject(this.client);
+            matchedClient = (Client) ois.readObject();
 
-        ObjectInputStream objectInputStream;
-        ObjectOutputStream objectOutputStream = null;
-        try{
-            objectOutputStream = new ObjectOutputStream(serverSocket.getOutputStream());
-            objectOutputStream.writeObject(this.client);
-
-            objectInputStream = new ObjectInputStream(serverSocket.getInputStream());
-            matchedClientInfo = (Client) objectInputStream.readObject();
         }
-        finally {
-            if(objectOutputStream != null) objectOutputStream.close();
-        }
-        return matchedClientInfo;
+        return matchedClient;
     }
 
     private void talk(Client matchedClientInfo, Socket workingSocket, BufferedReader br) {
@@ -159,13 +158,17 @@ public class Control {
     }
 
     private Socket tryToConnect(Client hostClient) {
-        Socket workingSocket = null;
-        try{
-            workingSocket = new Socket(hostClient.getIp(), hostClient.getCurrentPort());
-        } catch (IOException ignore) {
-
+        for(int i = 0; i < 3; i++) {
+            try{
+                return new Socket(hostClient.getIp(), hostClient.getCurrentPort());
+            } catch (IOException ignore) {
+                System.out.println("Unable to connect. Trying again.");
+                try{
+                    Thread.sleep(500);
+                } catch (InterruptedException ignored) { }
+            }
         }
-
+        return null;
     }
 }
 
