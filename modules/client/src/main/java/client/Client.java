@@ -3,15 +3,21 @@ package client;
 
 import client.exceptions.InvalidNameException;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 /**
  * Class is implementing client of {@link server.Server ChatBotServer}
  *
  */
 public class Client {
     private String userName;
+    private int currentPort;
+    private final InetAddress ip;
 
-    public Client(String userName) throws InvalidNameException {
+    public Client(String userName) throws InvalidNameException, UnknownHostException {
         setUserName(userName);
+        ip = InetAddress.getLocalHost();
     }
 
     public String getUserName() {
@@ -19,7 +25,7 @@ public class Client {
     }
 
     /**
-     * Method is repsonsible for setting username.
+     * Method is responsible for setting username.
      * If username is not valid to {@link Properties} throws
      * {@link InvalidNameException}
      */
@@ -39,6 +45,23 @@ public class Client {
             throw new InvalidNameException("Name should contain " + Properties.normalLetterCount + " normal letters");
         }
         this.userName = userName;
+    }
+
+    public int getCurrentPort() { return currentPort; }
+
+    public void setCurrentPort(int port) { this.currentPort = port; }
+
+    public InetAddress getIp() { return this.ip; }
+
+    /**
+     * Method return true if current user should open a {@link java.net.ServerSocket} so that given user could connect
+     * to him. Otherwise given client would open a server.
+     */
+    public boolean isHostToUser(Client client) {
+        if(this.currentPort == client.getCurrentPort()) {
+            return this.hashCode() - client.hashCode() < 0;
+        }
+        return this.getCurrentPort() - client.getCurrentPort() < 0;
     }
 
 }
