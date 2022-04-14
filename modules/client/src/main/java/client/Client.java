@@ -44,7 +44,7 @@ public class Client {
         Properties.Name.NameValidator nameValidator = new Properties.Name.NameValidator(userName);
 
         if(!nameValidator.notNull()) throw new InvalidNameException("Null name.");
-        if(nameValidator.inLen()) {
+        if(!nameValidator.inLen()) {
             throw new InvalidNameException("Name out of length.");
         }
         if(nameValidator.startsWithUpperCase() != Properties.Name.nameStartsWithUpperCase) {

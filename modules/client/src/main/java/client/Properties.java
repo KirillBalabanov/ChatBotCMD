@@ -24,7 +24,7 @@ public class Properties {
 
             public boolean containsNormalLettersCount() {
                 Pattern pattern = Pattern.compile(String.format("[a-zA-Z]{%d,}", normalLetterCount));
-                return pattern.matcher(this.str).matches();
+                return pattern.matcher(this.str).find();
             }
 
             public boolean inLen() {
@@ -36,7 +36,7 @@ public class Properties {
             }
 
             public boolean isValid() {
-                return regex.matcher(this.str).find();
+                return !regex.matcher(this.str).find();
             }
 
             public String getInvalidSymbols() {
