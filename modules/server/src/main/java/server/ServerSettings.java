@@ -35,24 +35,11 @@ public class ServerSettings {
     private final InetAddress ip;
     private final int port;
 
-    /**
-     * Construct class encapsulating free port and ip of current machine.
-     * Basically uses for <b>server</b> establish.
-     * <p>
-     * Creates from <b>Local Settings.</b>
-     * </p>
-     * */
     private ServerSettings() throws IOException{
         this.ip = InetAddress.getLocalHost();
         this.port = getFreePort();
     }
 
-    /**
-     * Constructor uses for creating an object of existing params.
-     * Basically uses by <b>clients</b> to get server settings.
-     * @param ip server ip.
-     * @param port server port.
-     */
     private ServerSettings(InetAddress ip, int port) throws PortUnreachableException {
         if(ip == null) throw new NullPointerException("IP cannot be null");
         if(port == -1) throw new PortUnreachableException("Port cannot be -1");

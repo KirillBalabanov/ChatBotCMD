@@ -3,17 +3,14 @@ package server;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.Semaphore;
 
 /**
  * Class is encapsulating server.
  * server.Server is responsible for matching two users with each other.
  * <P>
- * Matching means that server outputs first user {@link java.net.DatagramSocket} to second user, and contrary.
+ * Matching means that server inputs objects from two users and then outputs user1 object to user2, and contrary.
  * </P>
  */
 public class Server {
@@ -35,13 +32,9 @@ public class Server {
      * <P>
      *     Firstly server accepts two users, then inputs an object of each user.
      *     User1 object outputs to user2, anc contrary.
-     *     Semaphore outputs to every user to sync their connection after their close connection with server.
-     * </P>
-     * <P>
-     *     On the client side opens a 'connection' between users through {@link java.net.DatagramSocket}
      * </P>
      */
-    public void match() throws IOException, ClassNotFoundException {
+    public void matchTwoUsersAndSwapObjects() throws IOException, ClassNotFoundException {
         // accepting two users
         Socket user1 = serverSocket.accept();
         Socket user2 = serverSocket.accept();
@@ -52,11 +45,10 @@ public class Server {
             ObjectInputStream ois2 = new ObjectInputStream(user2.getInputStream());){
 
             // get Objects from users
-            ClientInfo user1Obj = (ClientInfo) ois1.readObject();
-            ClientInfo user2Obj = (ClientInfo) ois2.readObject();;
+            Object user1Obj = ois1.readObject();
+            Object user2Obj = ois2.readObject();;
 
-            // output objects to users, setting user1 - host.
-            user1Obj.setHost();
+            // output objects to users
             ous1.writeObject(user2Obj);
             ous2.writeObject(user1Obj);
 
@@ -74,9 +66,16 @@ public class Server {
     }
 
     /**
-     * Export server settings to settings\settings.txt
+     * Export server settings to default path settings/settings.txt.
      */
     public void exportSettings() throws IOException {
-        ServerSettings.exportSettings(serverSettings, "settings/settings.txt");
+        ServerSettings.exportSettings(this.serverSettings, "settings/settings.txt");
+    }
+
+    /**
+     * Export server settings to given path.
+     */
+    public void exportSettings(String path) throws IOException {
+        ServerSettings.exportSettings(this.serverSettings, path);
     }
 }

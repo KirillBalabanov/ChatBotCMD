@@ -1,6 +1,5 @@
 package client;
 
-import server.ClientInfo;
 import server.ServerSettings;
 
 import java.io.*;

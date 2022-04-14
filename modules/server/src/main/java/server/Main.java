@@ -16,7 +16,7 @@ public class Main {
             // loop match
             while(true) {
                 try {
-                    server.match();
+                    server.matchTwoUsersAndSwapObjects();
                 } catch (Exception e) {
                     System.out.println(e.toString());
                 }
