@@ -1,10 +1,7 @@
 package client;
 
-
 import client.exceptions.InvalidNameException;
 import server.ClientInfo;
-
-import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -12,7 +9,7 @@ import java.net.UnknownHostException;
  * Class is implementing client of {@link server.Server ChatBotServer}
  *
  */
-public class Client implements Serializable {
+public class Client {
     private String userName;
     private int currentPort;
     private final InetAddress ip;
@@ -44,20 +41,22 @@ public class Client implements Serializable {
      * {@link InvalidNameException}
      */
     public void setUserName(String userName) throws InvalidNameException {
-        if(userName == null) throw new InvalidNameException("Null name.");
-        if(userName.length() == 0 || userName.length() > Properties.Name.userNameLen) {
+        Properties.Name.NameValidator nameValidator = new Properties.Name.NameValidator(userName);
+
+        if(!nameValidator.notNull()) throw new InvalidNameException("Null name.");
+        if(nameValidator.inLen()) {
             throw new InvalidNameException("Name out of length.");
         }
-        if(Character.isUpperCase(userName.charAt(0)) != Properties.Name.nameStartsWithUpperCase) {
+        if(nameValidator.startsWithUpperCase() != Properties.Name.nameStartsWithUpperCase) {
             throw new InvalidNameException("Name starts with wrong case.");
         }
-        int normalLettersCounter = 0;
-        for(int i = 0; i < userName.length(); i++) {
-            if(Character.isLetter(userName.charAt(i))) normalLettersCounter++;
-        }
-        if(normalLettersCounter < Properties.Name.normalLetterCount) {
+        if(!nameValidator.containsNormalLettersCount()) {
             throw new InvalidNameException("Name should contain " + Properties.Name.normalLetterCount + " normal letters");
         }
+        if(!nameValidator.isValid()) throw new InvalidNameException("""
+                Name could contain:
+                Letters from A to Z non sensitive case, digits 0-9
+                Symbols: '_', '.', '-'""", nameValidator.getInvalidSymbols());
         this.userName = userName;
     }
 

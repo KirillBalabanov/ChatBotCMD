@@ -13,7 +13,10 @@ public class Main {
         String strCase = Properties.Name.nameStartsWithUpperCase ? "Upper Case" : "Lower Case";
         System.out.printf("---Name should start with %s%n" +
                 "---Contain %s normal letters%n" +
-                "---Be in range smaller than %s symbols%n", strCase, Properties.Name.normalLetterCount, Properties.Name.userNameLen);
+                "---Be in range smaller than %s symbols%n" +
+                "---Could contain:%n" +
+                "Letters from A to Z non sensitive case, digits 0-9%n" +
+                "Symbols: '_', '.', '-'%n", strCase, Properties.Name.normalLetterCount, Properties.Name.userNameLen);
     }
 
     public static void printMainMenu() {
