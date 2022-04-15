@@ -5,6 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.Semaphore;
 
 /**
  * Class is encapsulating server.
@@ -16,12 +17,14 @@ import java.net.Socket;
 public class Server {
     private final ServerSocket serverSocket;
     private final ServerSettings serverSettings;
-
+    private boolean isClosed;
+    private final Semaphore semaphore;
     /**
      * Construct server using {@link ServerSettings} data.
      * @param backlog defines how many users can be waiting for connection in queue.
      */
     public Server(int backlog) throws IOException {
+        semaphore = new Semaphore(1);
         // get local settings.
         serverSettings = ServerSettings.localSettings();
         serverSocket = new ServerSocket(serverSettings.getPort(), backlog, serverSettings.getIp());
@@ -33,10 +36,19 @@ public class Server {
      *     Firstly server accepts two users, then inputs an {@link server.ClientInfo} instance of each user.
      *     User1 object outputs to user2, anc contrary.
      * </P>
+     * If no users are in waiting queue, and method waitClose was invoked - <b>method returns immediately.</b>
      */
-    public void matchTwoUsersAndSwapObjects() throws IOException, ClassNotFoundException {
+    public void matchTwoUsersAndSwapObjects() throws IOException, ClassNotFoundException, InterruptedException {
         // accepting two users
-        Socket user1 = serverSocket.accept();
+        Socket user1;
+        try{
+            user1 = serverSocket.accept();
+        } catch (IOException ignore) {
+            // if no users are waiting for match, and server is closed - return from this method.
+            return;
+        }
+        // get block if first user is in waiting queue.
+        semaphore.acquire();
         Socket user2 = serverSocket.accept();
 
         try(ObjectOutputStream ous1 = new ObjectOutputStream(user1.getOutputStream());
@@ -56,6 +68,7 @@ public class Server {
             ous2.writeObject(user1Obj);
 
         }
+        semaphore.release();
     }
 
     public static Server startAndExportSettings(int backlog) throws IOException {
@@ -64,7 +77,27 @@ public class Server {
         return server;
     }
 
-    public void stop() throws IOException {
+    /**
+     * Terminates the server forcefully.
+     */
+    public void terminate() throws IOException {
+        close();
+    }
+
+    /**
+     * If any user is waiting for server reply, waitClose would wait up until the reply would be sent,
+     * and then server closes.
+     * <p>In other case if no users are waiting for server reply, server would close immediately.</p>
+     */
+    public void waitClose() throws IOException, InterruptedException {
+        // waiting for block
+        semaphore.acquire();
+        close();
+        semaphore.release();
+    }
+
+    private void close() throws IOException {
+        isClosed = true;
         serverSocket.close();
     }
 
@@ -81,4 +114,6 @@ public class Server {
     public void exportSettings(String path) throws IOException {
         ServerSettings.exportSettings(this.serverSettings, path);
     }
+
+    public boolean isClosed() { return this.isClosed; }
 }

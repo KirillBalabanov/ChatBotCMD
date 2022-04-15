@@ -10,11 +10,13 @@ public class Properties {
     public static final String endTalkStr = "$stop";
     public static final String defaultPathToSettings = "settings/settings.txt";
     public static final int loadSymbolsPeriodMS = 300;
-    public static class Name {
+
+    public static class UserName {
         public static final int userNameLen = 20;
         public static final int normalLetterCount = 3;
         public static final boolean nameStartsWithUpperCase = true;
         public static final Pattern regex = Pattern.compile("[^A-Z a-z._\\-0-9]");
+
         public static class NameValidator {
             private final String str;
 
@@ -28,7 +30,7 @@ public class Properties {
             }
 
             public boolean inLen() {
-                return this.str.length() < 20;
+                return this.str.length() > 0 && this.str.length() < userNameLen;
             }
 
             public boolean startsWithUpperCase() {
@@ -43,6 +45,7 @@ public class Properties {
                 StringBuilder stringBuilder = new StringBuilder();
                 Matcher matcher = regex.matcher(this.str);
                 while(matcher.find()) stringBuilder.append(String.format("'%s'", matcher.group())).append(", ");
+                stringBuilder.replace(stringBuilder.length() - 2, stringBuilder.length(), ".");
                 return stringBuilder.toString();
             }
             public boolean notNull() { return this.str != null; }

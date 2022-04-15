@@ -10,13 +10,13 @@ public class Main {
 
     public static void startMenu() {
         System.out.println("Greetings! Please input your name.");
-        String strCase = Properties.Name.nameStartsWithUpperCase ? "Upper Case" : "Lower Case";
+        String strCase = Properties.UserName.nameStartsWithUpperCase ? "Upper Case" : "Lower Case";
         System.out.printf("---Name should start with %s%n" +
                 "---Contain %s normal letters%n" +
                 "---Be in range smaller than %s symbols%n" +
                 "---Could contain:%n" +
                 "Letters from A to Z non sensitive case, digits 0-9%n" +
-                "Symbols: '_', '.', '-'%n", strCase, Properties.Name.normalLetterCount, Properties.Name.userNameLen);
+                "Symbols: '_', '.', '-'%n", strCase, Properties.UserName.normalLetterCount, Properties.UserName.userNameLen);
     }
 
     public static void printMainMenu() {
@@ -32,6 +32,7 @@ public class Main {
                 break;
             } catch (InvalidNameException | IOException invalidNameException) {
                 System.out.println(invalidNameException.toString());
+                System.out.println("Please input your name again.");
             }
         }
     }

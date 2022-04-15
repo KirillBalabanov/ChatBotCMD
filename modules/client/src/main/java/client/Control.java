@@ -27,15 +27,15 @@ public class Control {
     public void findAndTalk(BufferedReader br) {
 
         ScheduledExecutorService scheduledExecutorService = new ScheduledThreadPoolExecutor(1);
-
         scheduledExecutorService.scheduleAtFixedRate(dynamicLoaderRunnable(
                 "Finding user", ". . ."), 0, Properties.loadSymbolsPeriodMS, TimeUnit.MILLISECONDS);
+
         // request to server to find client.
         ClientInfo matchedClient;
         try{
             matchedClient = find();
         } catch (IOException | ClassNotFoundException ee) {
-            System.out.println("Fatal error... Please try again."); return;}
+            System.out.println("\r\nFatal error... Server closed."); return;}
         finally {
             scheduledExecutorService.shutdown();
         }
@@ -44,12 +44,11 @@ public class Control {
         scheduledExecutorService = new ScheduledThreadPoolExecutor(1);
         scheduledExecutorService.scheduleAtFixedRate(dynamicLoaderRunnable(
                 "Establishing a connection", ". . ."), 0, Properties.loadSymbolsPeriodMS, TimeUnit.MILLISECONDS);
+
         // if client is host then create ServerSocket, otherwise connect to host.
         Socket workingSocket;
         ServerSocket serverSocket = null;
-
         if(matchedClient.isHost()) {
-
             workingSocket = tryToConnect(matchedClient);
             scheduledExecutorService.shutdown();
             if(workingSocket == null) {
@@ -62,7 +61,7 @@ public class Control {
                 serverSocket = new ServerSocket(client.getCurrentPort());
                 workingSocket = serverSocket.accept();
             } catch (IOException ignore) {
-                System.out.println("Fatal error... Unable to create a server.");
+                System.out.println("\r\nFatal error... Unable to create a server.");
                 return;
             }
             finally {
@@ -82,7 +81,6 @@ public class Control {
                 serverSocket.close();
             } catch (IOException ignore) { }
         }
-
     }
 
     private ClientInfo find() throws IOException, ClassNotFoundException {
@@ -145,7 +143,7 @@ public class Control {
      * Method is creating Runnable Thread that would print loadingSymbols after str in cycle.
      * Uses as an executor in {@link java.util.concurrent.ScheduledExecutorService}.
      * @param str string that would not be erased
-     * @param loadingSymbols symbols that would be appearing every 0.5 seconds in cycle.
+     * @param loadingSymbols symbols that would be appearing in cycle
      */
     public static Runnable
     dynamicLoaderRunnable(String str, String loadingSymbols) {
