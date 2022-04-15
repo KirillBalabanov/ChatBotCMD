@@ -34,7 +34,9 @@ public class Control {
         ClientInfo matchedClient;
         try{
             matchedClient = find();
-        } catch (IOException | ClassNotFoundException ee) {
+        }
+        catch (FileNotFoundException ignore) {System.out.println("\r\nMissing 'settings/settings.txt' "); return;}
+        catch (IOException | ClassNotFoundException ignore) {
             System.out.println("\r\nFatal error... Server closed."); return;}
         finally {
             scheduledExecutorService.shutdown();
