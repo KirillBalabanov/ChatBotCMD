@@ -54,7 +54,10 @@ public class ServerSettings {
      * @param path path to file.
      */
     public static void exportSettings(ServerSettings serverSettings, String path) throws IOException{
-        try(FileWriter fileWriter = new FileWriter(path)) {
+        File file = new File(path);
+        File folders = file.getParentFile();
+        if(folders != null && !folders.exists()) folders.mkdirs();
+        try(FileWriter fileWriter = new FileWriter(file)) {
             String ipStr = serverSettings.ip.toString();
             int startIndex = ipStr.indexOf("/");
             ipStr = ipStr.substring(startIndex + 1);
